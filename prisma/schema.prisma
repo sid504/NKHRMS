@@ -1,0 +1,193 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  role      String   @default("EMPLOYEE") // Role enum as string
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  employee     Employee?
+  manager      Manager?
+  hrManager    HRManager?
+  admin        Admin?
+  leaveRequests LeaveRequest[]
+  attendance   Attendance[]
+  performanceReviews PerformanceReview[]
+  payroll      Payroll[]
+}
+
+model Employee {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  firstName   String
+  lastName    String
+  employeeId  String   @unique
+  department  String
+  position    String
+  hireDate    DateTime
+  salary      Float
+  phone       String?
+  address     String?
+  emergencyContact String?
+  status      String   @default("ACTIVE") // EmployeeStatus enum as string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  manager     Manager? @relation(fields: [managerId], references: [id])
+  managerId   String?
+  leaveRequests LeaveRequest[]
+  attendance   Attendance[]
+  performanceReviews PerformanceReview[]
+  payroll      Payroll[]
+}
+
+model Manager {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  department String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  employees Employee[]
+}
+
+model HRManager {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Admin {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LeaveRequest {
+  id          String      @id @default(cuid())
+  employeeId  String
+  leaveType   String      // LeaveType enum as string
+  startDate   DateTime
+  endDate     DateTime
+  reason      String
+  status      String      @default("PENDING") // LeaveStatus enum as string
+  approvedBy  String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  // Relations
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  user        User?       @relation(fields: [approvedBy], references: [id])
+}
+
+model Attendance {
+  id          String   @id @default(cuid())
+  employeeId  String
+  date        DateTime
+  checkIn     DateTime?
+  checkOut    DateTime?
+  totalHours  Float?
+  overtime    Float?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [employeeId], references: [id])
+}
+
+model PerformanceReview {
+  id          String   @id @default(cuid())
+  employeeId  String
+  reviewerId  String
+  reviewDate  DateTime
+  rating      Int      // 1-5 scale
+  comments    String
+  goals       String?
+  nextReviewDate DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [reviewerId], references: [id])
+}
+
+model Payroll {
+  id          String   @id @default(cuid())
+  employeeId  String
+  userId      String
+  month       Int
+  year        Int
+  baseSalary  Float
+  overtime    Float?
+  deductions  Float?
+  bonuses     Float?
+  netSalary   Float
+  status      String   @default("PENDING") // PayrollStatus enum as string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model JobPosting {
+  id          String   @id @default(cuid())
+  title       String
+  department  String
+  description String
+  requirements String
+  salary      Float?
+  location    String?
+  type        String   // JobType enum as string
+  status      String   @default("ACTIVE") // JobStatus enum as string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  applications JobApplication[]
+}
+
+model JobApplication {
+  id          String   @id @default(cuid())
+  jobId       String
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  resume      String?
+  coverLetter String?
+  status      String   @default("PENDING") // ApplicationStatus enum as string
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  job         JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
+} 
