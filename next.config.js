@@ -2,7 +2,7 @@
 const nextConfig = {
   // Enable experimental features for better performance
   experimental: {
-    optimizeCss: true,
+    // Disable optimizeCss to avoid requiring 'critters' during prerender
     optimizePackageImports: ['lucide-react'],
   },
   

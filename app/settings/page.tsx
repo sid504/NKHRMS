@@ -73,7 +73,10 @@ export default function SettingsPage() {
     }))
   }
 
-  const handleUserChange = (field: string, value: string | boolean) => {
+  const handleUserChange = (
+    field: string,
+    value: string | boolean | { email: boolean; push: boolean; sms: boolean }
+  ) => {
     setUserData(prev => ({
       ...prev,
       [field]: value

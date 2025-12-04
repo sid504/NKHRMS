@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useAuth } from './contexts/AuthContext'
 import LoadingSpinner from './components/LoadingSpinner'
 import {
@@ -31,7 +32,7 @@ import {
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
+  const searchInputRef = useRef<HTMLInputElement | null>(null)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
@@ -47,6 +48,48 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       router.push('/auth/login')
     }
   }, [user, isLoading, router, isAuthPage, isEmployeePortal])
+
+  const navigation = useMemo((): Array<{ name: string; href: string; icon: any }> => {
+    const base = [
+      { name: 'Dashboard', href: '/dashboard', icon: TrendingUp },
+      { name: 'Employees', href: '/employees', icon: Users },
+      { name: 'User Management', href: '/user-management', icon: Shield },
+    ]
+    const leaveByRole = user?.role === 'admin'
+      ? [
+          { name: 'Leave Management', href: '/leave-management', icon: CalendarDays },
+          { name: 'Leave Balances', href: '/leave-balances', icon: Calendar },
+          { name: 'Team Leave Requests', href: '/leave-requests', icon: Calendar }
+        ]
+      : [
+          { name: 'Leave Management', href: '/leave-management', icon: Calendar }
+        ]
+    const tail = [
+      { name: 'Attendance', href: '/attendance', icon: Clock },
+      { name: 'Payroll', href: '/payroll', icon: DollarSign },
+      { name: 'Performance', href: '/performance', icon: Target },
+      { name: 'Recruitment', href: '/recruitment', icon: Briefcase },
+      { name: 'Training', href: '/training', icon: GraduationCap },
+      { name: 'Benefits', href: '/benefits', icon: Heart },
+      { name: 'Calendar', href: '/calendar', icon: Calendar },
+      { name: 'Documents', href: '/documents', icon: FileText },
+      { name: 'Reports', href: '/reports', icon: BarChart3 },
+      { name: 'AI Insights', href: '/ai-insights', icon: Brain },
+      { name: 'Notifications', href: '/notifications', icon: Bell },
+      { name: 'Help & Support', href: '/help', icon: HelpCircle },
+      { name: 'Settings', href: '/settings', icon: Settings },
+    ]
+    return [...base, ...leaveByRole, ...tail]
+  }, [user?.role])
+
+  const breadcrumbs = useMemo(() => {
+    const path = pathname || ''
+    const segments = path.split('/').filter(Boolean)
+    return segments.map((segment, index) => ({
+      name: segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' '),
+      href: '/' + segments.slice(0, index + 1).join('/')
+    }))
+  }, [pathname])
 
   // If on auth pages or employee portal, don't show the admin layout
   if (isAuthPage || isEmployeePortal) {
@@ -67,51 +110,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     return null
   }
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: TrendingUp },
-    { name: 'Employees', href: '/employees', icon: Users },
-    { name: 'User Management', href: '/user-management', icon: Shield },
-    ...(user?.role === 'admin' 
-      ? [
-          { name: 'Leave Management', href: '/leave-management', icon: CalendarDays },
-          { name: 'Leave Balances', href: '/leave-balances', icon: Calendar },
-          { name: 'Team Leave Requests', href: '/leave-requests', icon: Calendar }
-        ]
-      : user?.role === 'manager'
-      ? [
-          { name: 'Leave Management', href: '/leave-management', icon: Calendar }
-        ]
-      : [
-          { name: 'Leave Management', href: '/leave-management', icon: Calendar }
-        ]
-    ),
-    { name: 'Attendance', href: '/attendance', icon: Clock },
-    { name: 'Payroll', href: '/payroll', icon: DollarSign },
-    { name: 'Performance', href: '/performance', icon: Target },
-    { name: 'Recruitment', href: '/recruitment', icon: Briefcase },
-    { name: 'Training', href: '/training', icon: GraduationCap },
-    { name: 'Benefits', href: '/benefits', icon: Heart },
-    { name: 'Calendar', href: '/calendar', icon: Calendar },
-    { name: 'Documents', href: '/documents', icon: FileText },
-    { name: 'Reports', href: '/reports', icon: BarChart3 },
-    { name: 'AI Insights', href: '/ai-insights', icon: Brain },
-    { name: 'Notifications', href: '/notifications', icon: Bell },
-    { name: 'Help & Support', href: '/help', icon: HelpCircle },
-    { name: 'Settings', href: '/settings', icon: Settings },
-  ]
-
-  const getBreadcrumbs = () => {
-    const path = pathname || ''
-    const segments = path.split('/').filter(Boolean)
-    return segments.map((segment, index) => ({
-      name: segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' '),
-      href: '/' + segments.slice(0, index + 1).join('/')
-    }))
-  }
-
   const handleLogout = () => {
-    logout()
+    // Close modal first to avoid state update on unmounted component during route change
     setShowLogoutConfirm(false)
+    logout()
   }
 
   return (
@@ -139,7 +141,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {navigation.map((item) => {
                   const isActive = pathname === item.href
                   return (
-                    <a
+                    <Link prefetch={false}
                       key={item.name}
                       href={item.href}
                       className={`group flex items-center px-2 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -154,7 +156,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         }`}
                       />
                       {item.name}
-                    </a>
+                    </Link>
                   )
                 })}
               </nav>
@@ -260,25 +262,25 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <ol className="flex items-center space-x-4">
                   <li>
                     <div>
-                      <a href="/dashboard" className="text-gray-400 hover:text-gray-500">
+                      <Link prefetch={false} href="/dashboard" className="text-gray-400 hover:text-gray-500">
                         NKHR
-                      </a>
+                      </Link>
                     </div>
                   </li>
-                  {getBreadcrumbs().map((breadcrumb, index) => (
+                  {breadcrumbs.map((breadcrumb, index) => (
                     <li key={breadcrumb.name}>
                       <div className="flex items-center">
                         <span className="text-gray-400 mx-2">/</span>
-                        <a
+                        <Link prefetch={false}
                           href={breadcrumb.href}
                           className={`text-sm font-medium ${
-                            index === getBreadcrumbs().length - 1
+                            index === breadcrumbs.length - 1
                               ? 'text-gray-900'
                               : 'text-gray-500 hover:text-gray-700'
                           }`}
                         >
                           {breadcrumb.name}
-                        </a>
+                        </Link>
                       </div>
                     </li>
                   ))}
@@ -295,8 +297,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <input
                   type="text"
                   placeholder="Search anything..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  ref={searchInputRef}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>

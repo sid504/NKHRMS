@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { 
   Users, 
   Calendar, 
@@ -25,38 +26,39 @@ import {
   ArrowUpRight,
   ArrowDownRight
 } from 'lucide-react'
-import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
+
+const Charts = dynamic(() => import('./charts.client'), { ssr: false })
 
 export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   // Advanced analytics data
-  const employeeGrowthData = [
+  const employeeGrowthData = useMemo(() => [
     { month: 'Jan', employees: 1200, target: 1250 },
     { month: 'Feb', employees: 1250, target: 1300 },
     { month: 'Mar', employees: 1280, target: 1350 },
     { month: 'Apr', employees: 1320, target: 1400 },
     { month: 'May', employees: 1350, target: 1450 },
     { month: 'Jun', employees: 1380, target: 1500 },
-  ]
+  ], [])
 
-  const performanceData = [
+  const performanceData = useMemo(() => [
     { name: 'Excellent', value: 35, color: '#10B981' },
     { name: 'Good', value: 45, color: '#3B82F6' },
     { name: 'Average', value: 15, color: '#F59E0B' },
     { name: 'Needs Improvement', value: 5, color: '#EF4444' },
-  ]
+  ], [])
 
-  const departmentData = [
+  const departmentData = useMemo(() => [
     { name: 'Engineering', employees: 450, budget: 8500000 },
     { name: 'Sales', employees: 320, budget: 5200000 },
     { name: 'Marketing', employees: 180, budget: 2800000 },
     { name: 'HR', employees: 85, budget: 1200000 },
     { name: 'Finance', employees: 95, budget: 1400000 },
     { name: 'Operations', employees: 104, budget: 1600000 },
-  ]
+  ], [])
 
-  const aiInsights = [
+  const aiInsights = useMemo(() => [
     {
       type: 'success',
       title: 'High Performance Alert',
@@ -81,9 +83,9 @@ export default function DashboardPage() {
       color: 'text-blue-600',
       bgColor: 'bg-blue-50'
     }
-  ]
+  ], [])
 
-  const stats = [
+  const stats = useMemo(() => [
     {
       title: 'Total Employees',
       value: '1,234',
@@ -120,9 +122,9 @@ export default function DashboardPage() {
       color: 'bg-gradient-to-r from-orange-500 to-orange-600',
       trend: 'up'
     }
-  ]
+  ], [])
 
-  const quickActions = [
+  const quickActions = useMemo(() => [
     {
       title: 'Add Employee',
       description: 'Create new employee profile',
@@ -151,7 +153,7 @@ export default function DashboardPage() {
       color: 'bg-orange-500',
       href: '/dashboard'
     }
-  ]
+  ], [])
 
   const recentActivities = [
     {
@@ -240,48 +242,8 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Employee Growth Chart */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Employee Growth</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <AreaChart data={employeeGrowthData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Legend />
-              <Area type="monotone" dataKey="employees" stackId="1" stroke="#3B82F6" fill="#3B82F6" fillOpacity={0.6} />
-              <Area type="monotone" dataKey="target" stackId="1" stroke="#10B981" fill="#10B981" fillOpacity={0.6} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-
-        {/* Performance Distribution */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Distribution</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={performanceData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                outerRadius={80}
-                fill="#8884d8"
-                dataKey="value"
-              >
-                {performanceData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
+      {/* Charts Section (code-split) */}
+      <Charts employeeGrowthData={employeeGrowthData} performanceData={performanceData} />
 
       {/* AI Insights and Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

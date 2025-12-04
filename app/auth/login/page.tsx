@@ -16,9 +16,9 @@ import {
 } from 'lucide-react'
 
 export default function LoginPage() {
-  const [loginType, setLoginType] = useState('admin')
-  const [email, setEmail] = useState('admin@nkhr.com')
-  const [password, setPassword] = useState('admin123')
+  const [loginType, setLoginType] = useState('employee')
+  const [email, setEmail] = useState('john.doe@nkhr.com')
+  const [password, setPassword] = useState('employee123')
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
@@ -34,21 +34,14 @@ export default function LoginPage() {
       return
     }
 
-    console.log('Attempting login with:', { email, password, loginType })
-
     try {
       const success = await login(email, password, loginType)
-      
       if (!success) {
         setError('Invalid credentials. Please check your email and password.')
-        console.log('Login failed for:', { email, password, loginType })
       } else {
-        console.log('Login successful for:', { email, loginType })
         setSuccess('Login successful! Redirecting...')
-        // The navigation will be handled by the AuthContext
       }
     } catch (error) {
-      console.error('Login error:', error)
       setError('An error occurred during login. Please try again.')
     }
   }
@@ -79,9 +72,7 @@ export default function LoginPage() {
             <Building className="h-8 w-8 text-white" />
           </div>
           <h2 className="text-3xl font-bold text-gray-900">Welcome to NKHR</h2>
-          <p className="mt-2 text-sm text-gray-600">
-            Next-Generation AI-Powered HR Platform
-          </p>
+          <p className="mt-2 text-sm text-gray-600">Next-Generation AI-Powered HR Platform</p>
         </div>
 
         {/* Login Type Selector */}
@@ -90,7 +81,16 @@ export default function LoginPage() {
             {loginTypes.map((type) => (
               <button
                 key={type.id}
-                onClick={() => setLoginType(type.id)}
+                onClick={() => {
+                  setLoginType(type.id)
+                  if (type.id === 'employee') {
+                    setEmail('john.doe@nkhr.com')
+                    setPassword('employee123')
+                  } else {
+                    setEmail('admin@nkhr.com')
+                    setPassword('admin123')
+                  }
+                }}
                 className={`w-full p-4 rounded-lg border-2 transition-all duration-200 ${
                   loginType === type.id
                     ? 'border-blue-500 bg-blue-50'
@@ -132,9 +132,7 @@ export default function LoginPage() {
             )}
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                Email Address
-              </label>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
@@ -150,9 +148,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                Password
-              </label>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">Password</label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
@@ -176,18 +172,10 @@ export default function LoginPage() {
 
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">
-                  Remember me
-                </label>
+                <input id="remember-me" type="checkbox" className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
+                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700">Remember me</label>
               </div>
-              <button type="button" className="text-sm text-blue-600 hover:text-blue-500">
-                Forgot password?
-              </button>
+              <button type="button" className="text-sm text-blue-600 hover:text-blue-500">Forgot password?</button>
             </div>
 
             <button
@@ -223,4 +211,4 @@ export default function LoginPage() {
       </div>
     </div>
   )
-} 
+}

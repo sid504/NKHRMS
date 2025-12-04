@@ -113,11 +113,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    setUser(null)
-    localStorage.removeItem('user')
-    localStorage.removeItem('token')
-    sessionStorage.clear()
-    router.push('/auth/login')
+    // Guard for client side APIs
+    try {
+      setUser(null)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('user')
+        localStorage.removeItem('token')
+        sessionStorage.clear()
+      }
+    } catch (_) {
+      // no-op
+    }
+    // Use replace to avoid user returning to protected page via back button
+    router.replace('/auth/login')
   }
 
   const value = {
