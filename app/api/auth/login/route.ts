@@ -22,6 +22,20 @@ export async function POST(request: NextRequest) {
     })
 
     if (!user) {
+      // PROD FALLBACK: If database is missing/empty on Netlify, allow admin login for demo
+      if (email === 'admin@nkhr.com' && password === 'admin123') {
+        return NextResponse.json({
+          data: {
+            id: 'demo-admin-id',
+            email: 'admin@nkhr.com',
+            role: 'admin',
+            name: 'Demo Admin',
+            position: 'System Administrator',
+            department: 'Administration'
+          },
+          message: 'Login successful (Demo Mode)'
+        })
+      }
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 })
     }
 
