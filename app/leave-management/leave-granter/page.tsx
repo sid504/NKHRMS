@@ -21,6 +21,7 @@ import {
   FileText,
   Shield,
   MessageSquare,
+  Activity,
   Loader2
 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
