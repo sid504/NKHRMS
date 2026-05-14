@@ -191,4 +191,18 @@ model JobApplication {
 
   // Relations
   job         JobPosting @relation(fields: [jobId], references: [id], onDelete: Cascade)
-} 
+}
+
+model Holiday {
+  id          String   @id @default(cuid())
+  name        String
+  date        DateTime
+  type        String   // Public, National, Optional, Company
+  description String?
+  isOptional  Boolean  @default(false)
+  country     String   @default("All")
+  region      String   @default("Global")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+ 
