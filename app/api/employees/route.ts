@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     const hashedPassword = Buffer.from(password).toString('base64')
 
     // Create user + employee in a transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: any) => {
       const user = await tx.user.create({
         data: { email, password: hashedPassword, role },
       })
