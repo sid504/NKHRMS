@@ -14,7 +14,9 @@ import {
   Briefcase,
   FileText,
   Shield,
-  CheckCircle
+  CheckCircle,
+  TrendingUp,
+  TrendingDown
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 
