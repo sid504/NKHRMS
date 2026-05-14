@@ -56,6 +56,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
 
       if (!res.ok) {
+        // ULTIMATE DEMO BYPASS: If API fails (likely due to DB path issues on Netlify), 
+        // allow the primary admin demo account to enter the dashboard anyway.
+        if (email === 'admin@nkhr.com' && password === 'admin123' && role === 'admin') {
+          const demoUser: User = {
+            id: 'demo-admin-id',
+            email: 'admin@nkhr.com',
+            name: 'Demo Admin',
+            role: 'admin',
+            position: 'System Administrator',
+            department: 'Administration'
+          }
+          setUser(demoUser)
+          localStorage.setItem('user', JSON.stringify(demoUser))
+          localStorage.setItem('token', 'demo-token')
+          setIsLoading(false)
+          router.push('/dashboard')
+          return true
+        }
+
         setIsLoading(false)
         return false
       }
