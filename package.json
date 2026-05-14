@@ -12,7 +12,8 @@
     "db:generate": "prisma generate",
     "db:seed": "node scripts/seed.js",
     "db:reset": "prisma db push --force-reset && node scripts/seed.js",
-    "clear-cache": "node scripts/clear-cache.js"
+    "clear-cache": "node scripts/clear-cache.js",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@google/genai": "^2.2.0",
