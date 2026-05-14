@@ -11,6 +11,7 @@ import {
   ChevronRight,
   CheckCircle,
   FileText,
+  Shield,
   Users,
   Video,
   Star,
