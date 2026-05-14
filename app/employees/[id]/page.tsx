@@ -56,11 +56,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
   }
 
   if (!employee) {
-    return (
-      <div className="text-center py-12">
-        <h3 className="mt-2 text-sm font-medium text-gray-900">Employee not found</h3>
-      </div>
-    )
+    notFound()
   }
 
   // Map backend stats if necessary or use defaults
