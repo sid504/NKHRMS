@@ -22,6 +22,36 @@ import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, X
 
 export default function AIInsightsPage() {
   const [selectedInsight, setSelectedInsight] = useState(0)
+  const [prompt, setPrompt] = useState('')
+  const [aiResponse, setAiResponse] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const generateInsights = async () => {
+    setIsGenerating(true)
+    setError(null)
+    setAiResponse('')
+
+    try {
+      const response = await fetch('/api/ai/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: prompt || 'Analyze our HR efficiency and provide 3 key recommendations for improving retention in Engineering.',
+          context: { departmentEfficiency, performanceTrends }
+        })
+      })
+
+      const data = await response.json()
+      if (!response.ok) throw new Error(data.error || 'Failed to generate insights')
+      
+      setAiResponse(data.result)
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   const aiPredictions = [
     {
@@ -152,12 +182,51 @@ export default function AIInsightsPage() {
               <Brain className="w-4 h-4 text-purple-600" />
               <span className="text-sm font-medium text-purple-700">AI Active</span>
             </div>
-            <button className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-200">
-              <Zap className="w-4 h-4 inline mr-2" />
-              Generate Report
+            <button 
+              onClick={generateInsights}
+              disabled={isGenerating}
+              className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-6 py-2 rounded-lg hover:shadow-lg transition-all duration-200 disabled:opacity-50 flex items-center"
+            >
+              <Zap className={`w-4 h-4 mr-2 ${isGenerating ? 'animate-pulse' : ''}`} />
+              {isGenerating ? 'Generating...' : 'Generate AI Report'}
             </button>
           </div>
         </div>
+      </div>
+
+      {/* Dynamic AI Chat / Response Area */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-8">
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-2">Ask NKHR AI Assistant</label>
+          <div className="flex gap-4">
+            <input 
+              type="text" 
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder="e.g. How can we improve satisfaction in the Finance department?"
+              className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              onKeyDown={(e) => e.key === 'Enter' && generateInsights()}
+            />
+          </div>
+        </div>
+        
+        {error && (
+          <div className="p-4 mb-4 bg-red-50 text-red-600 rounded-lg border border-red-200">
+            {error}
+          </div>
+        )}
+
+        {aiResponse && (
+          <div className="p-6 bg-purple-50 rounded-xl border border-purple-100 mt-4">
+            <div className="flex items-center mb-4">
+              <Brain className="w-6 h-6 text-purple-600 mr-2" />
+              <h3 className="text-lg font-semibold text-gray-900">Gemini AI Analysis</h3>
+            </div>
+            <div className="prose prose-purple max-w-none whitespace-pre-wrap text-gray-700">
+              {aiResponse}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* AI Predictions */}

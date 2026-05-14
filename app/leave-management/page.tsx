@@ -37,6 +37,36 @@ export default function LeaveManagementPage() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [timeFilter, setTimeFilter] = useState('current-week')
   const [activeTab, setActiveTab] = useState('overview')
+  const [employeesOnLeave, setEmployeesOnLeave] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchLeaves = async () => {
+      try {
+        const res = await fetch('/api/leave-requests')
+        if (res.ok) {
+          const data = await res.json()
+          // Map DB structure to what the UI expects
+          const mappedLeaves = data.data.map((req: any) => ({
+            id: req.employee.employeeId,
+            name: `${req.employee.firstName} ${req.employee.lastName}`,
+            department: req.employee.department,
+            leaveType: req.leaveType,
+            startDate: req.startDate,
+            endDate: req.endDate,
+            days: Math.ceil((new Date(req.endDate).getTime() - new Date(req.startDate).getTime()) / (1000 * 60 * 60 * 24)) + 1,
+            status: req.status === 'PENDING' ? 'Pending' : req.status === 'APPROVED' ? 'Approved' : 'Rejected'
+          }))
+          setEmployeesOnLeave(mappedLeaves)
+        }
+      } catch (error) {
+        console.error('Failed to fetch leave requests', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchLeaves()
+  }, [])
 
   // Mock data for charts
   const monthlyLeaveData = [
@@ -63,48 +93,6 @@ export default function LeaveManagementPage() {
     { name: 'Bereavement', value: 6, color: '#6B7280' }
   ]
 
-  const employeesOnLeave = [
-    {
-      id: 'EMP001',
-      name: 'John Doe',
-      department: 'Engineering',
-      leaveType: 'Vacation',
-      startDate: '2024-01-15',
-      endDate: '2024-01-20',
-      days: 6,
-      status: 'Approved'
-    },
-    {
-      id: 'EMP002',
-      name: 'Sarah Wilson',
-      department: 'Engineering',
-      leaveType: 'Sick Leave',
-      startDate: '2024-01-12',
-      endDate: '2024-01-14',
-      days: 3,
-      status: 'Approved'
-    },
-    {
-      id: 'EMP003',
-      name: 'Mike Johnson',
-      department: 'Sales',
-      leaveType: 'Personal Leave',
-      startDate: '2024-01-16',
-      endDate: '2024-01-17',
-      days: 2,
-      status: 'Pending'
-    },
-    {
-      id: 'EMP004',
-      name: 'Alice Brown',
-      department: 'Marketing',
-      leaveType: 'Maternity Leave',
-      startDate: '2024-02-01',
-      endDate: '2024-05-01',
-      days: 90,
-      status: 'Approved'
-    }
-  ]
 
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -156,10 +144,10 @@ export default function LeaveManagementPage() {
                 <p className="text-gray-600">Comprehensive leave tracking and management system</p>
               </div>
               <div className="flex space-x-3">
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
+                <Link href="/leave-management/new" className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center">
                   <Plus className="h-4 w-4 mr-2" />
                   New Request
-                </button>
+                </Link>
                 <button className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 flex items-center">
                   <Download className="h-4 w-4 mr-2" />
                   Export
@@ -318,7 +306,10 @@ export default function LeaveManagementPage() {
               <div className="bg-white rounded-lg border border-gray-200">
                 <div className="px-6 py-4 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">Employees on Leave</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Employees on Leave 
+                      {loading && <span className="ml-2 text-sm text-gray-500 font-normal">Loading...</span>}
+                    </h3>
                     <div className="flex items-center space-x-4">
                       <select
                         value={timeFilter}
@@ -364,7 +355,7 @@ export default function LeaveManagementPage() {
                             <div className="flex items-center">
                               <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
                                 <span className="text-white font-medium">
-                                  {employee.name.split(' ').map(n => n[0]).join('')}
+                                  {employee.name.split(' ').map((n: string) => n[0]).join('')}
                                 </span>
                               </div>
                               <div className="ml-4">

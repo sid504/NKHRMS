@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
   ArrowLeft,
@@ -20,60 +20,62 @@ import {
   TrendingUp,
   Star,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react'
 
 export default function EmployeeDetailsPage({ params }: { params: { id: string } }) {
   const [activeTab, setActiveTab] = useState('overview')
 
-  // Mock employee data
-  const employee = {
-    id: params.id,
-    name: 'John Doe',
-    email: 'john.doe@company.com',
-    phone: '+1 (555) 123-4567',
-    position: 'Senior Software Engineer',
-    department: 'Engineering',
-    location: 'New York, NY',
-    hireDate: '2022-01-15',
-    salary: '$85,000',
-    status: 'Active',
-    manager: 'Sarah Wilson',
-    employeeId: 'EMP001',
-    avatar: null,
-    skills: ['JavaScript', 'React', 'Node.js', 'TypeScript', 'Python'],
-    education: [
-      {
-        degree: 'Bachelor of Science in Computer Science',
-        institution: 'MIT',
-        year: '2020'
+  const [employee, setEmployee] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchEmployee = async () => {
+      try {
+        const res = await fetch(`/api/employees/${params.id}`)
+        if (res.ok) {
+          const data = await res.json()
+          setEmployee(data.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch employee details:', error)
+      } finally {
+        setLoading(false)
       }
-    ],
-    experience: [
-      {
-        company: 'Tech Corp',
-        position: 'Software Developer',
-        duration: '2020-2022'
-      }
-    ],
-    performance: {
-      rating: 4.5,
-      lastReview: '2024-01-15',
-      nextReview: '2024-07-15',
-      goals: ['Improve team collaboration', 'Lead 2 new projects', 'Mentor junior developers']
-    },
-    attendance: {
-      present: 95,
-      absent: 3,
-      late: 2,
-      totalDays: 100
-    },
-    leave: {
-      used: 15,
-      remaining: 10,
-      total: 25
     }
+    fetchEmployee()
+  }, [params.id])
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    )
   }
+
+  if (!employee) {
+    return (
+      <div className="text-center py-12">
+        <h3 className="mt-2 text-sm font-medium text-gray-900">Employee not found</h3>
+      </div>
+    )
+  }
+
+  // Map backend stats if necessary or use defaults
+  const skills = ['JavaScript', 'React', 'Node.js', 'TypeScript', 'Python'] // Mock for now
+  const education = [
+    { degree: 'Bachelor of Science in Computer Science', institution: 'MIT', year: '2020' }
+  ]
+  const experience = [
+    { company: 'Tech Corp', position: 'Software Developer', duration: '2020-2022' }
+  ]
+  const performance = {
+    rating: 4.5, lastReview: '2024-01-15', nextReview: '2024-07-15', goals: ['Improve team collaboration', 'Lead 2 new projects']
+  }
+  const attendance = { present: 95, absent: 3, late: 2, totalDays: 100 }
+  const leave = { used: 15, remaining: 10, total: 25 }
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: User },
@@ -105,27 +107,27 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium text-gray-500">Full Name</label>
-              <p className="text-gray-900">{employee.name}</p>
+              <p className="text-gray-900">{employee.firstName} {employee.lastName}</p>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-500">Email</label>
               <div className="flex items-center">
                 <Mail className="h-4 w-4 text-gray-400 mr-2" />
-                <p className="text-gray-900">{employee.email}</p>
+                <p className="text-gray-900">{employee.user?.email || 'N/A'}</p>
               </div>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-500">Phone</label>
               <div className="flex items-center">
                 <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                <p className="text-gray-900">{employee.phone}</p>
+                <p className="text-gray-900">{employee.phone || 'N/A'}</p>
               </div>
             </div>
             <div>
               <label className="text-sm font-medium text-gray-500">Location</label>
               <div className="flex items-center">
                 <MapPin className="h-4 w-4 text-gray-400 mr-2" />
-                <p className="text-gray-900">{employee.location}</p>
+                <p className="text-gray-900">{employee.address || 'N/A'}</p>
               </div>
             </div>
           </div>
@@ -150,7 +152,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
             </div>
             <div>
               <label className="text-sm font-medium text-gray-500">Manager</label>
-              <p className="text-gray-900">{employee.manager}</p>
+              <p className="text-gray-900">{employee.manager?.firstName} {employee.manager?.lastName} {employee.manager ? '' : 'N/A'}</p>
             </div>
           </div>
         </div>
@@ -160,7 +162,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills</h3>
         <div className="flex flex-wrap gap-2">
-          {employee.skills.map((skill, index) => (
+          {skills.map((skill, index) => (
             <span
               key={index}
               className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full"
@@ -178,7 +180,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
           Education
         </h3>
         <div className="space-y-4">
-          {employee.education.map((edu, index) => (
+          {education.map((edu, index) => (
             <div key={index} className="border-l-4 border-blue-500 pl-4">
               <h4 className="font-medium text-gray-900">{edu.degree}</h4>
               <p className="text-gray-600">{edu.institution}</p>
@@ -195,7 +197,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
           Work Experience
         </h3>
         <div className="space-y-4">
-          {employee.experience.map((exp, index) => (
+          {experience.map((exp, index) => (
             <div key={index} className="border-l-4 border-green-500 pl-4">
               <h4 className="font-medium text-gray-900">{exp.position}</h4>
               <p className="text-gray-600">{exp.company}</p>
@@ -218,7 +220,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Current Rating</p>
-              <p className="text-2xl font-bold text-gray-900">{employee.performance.rating}/5.0</p>
+              <p className="text-2xl font-bold text-gray-900">{performance.rating}/5.0</p>
             </div>
           </div>
         </div>
@@ -230,7 +232,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Last Review</p>
               <p className="text-2xl font-bold text-gray-900">
-                {new Date(employee.performance.lastReview).toLocaleDateString()}
+                {new Date(performance.lastReview).toLocaleDateString()}
               </p>
             </div>
           </div>
@@ -243,7 +245,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Next Review</p>
               <p className="text-2xl font-bold text-gray-900">
-                {new Date(employee.performance.nextReview).toLocaleDateString()}
+                {new Date(performance.nextReview).toLocaleDateString()}
               </p>
             </div>
           </div>
@@ -254,7 +256,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Performance Goals</h3>
         <div className="space-y-3">
-          {employee.performance.goals.map((goal, index) => (
+          {performance.goals.map((goal, index) => (
             <div key={index} className="flex items-center">
               <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
               <span className="text-gray-700">{goal}</span>
@@ -276,7 +278,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Present Days</p>
-              <p className="text-2xl font-bold text-gray-900">{employee.attendance.present}</p>
+              <p className="text-2xl font-bold text-gray-900">{attendance.present}</p>
             </div>
           </div>
         </div>
@@ -287,7 +289,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Absent Days</p>
-              <p className="text-2xl font-bold text-gray-900">{employee.attendance.absent}</p>
+              <p className="text-2xl font-bold text-gray-900">{attendance.absent}</p>
             </div>
           </div>
         </div>
@@ -298,7 +300,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Late Days</p>
-              <p className="text-2xl font-bold text-gray-900">{employee.attendance.late}</p>
+              <p className="text-2xl font-bold text-gray-900">{attendance.late}</p>
             </div>
           </div>
         </div>
@@ -309,7 +311,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
             </div>
             <div className="ml-4">
               <p className="text-sm font-medium text-gray-600">Total Days</p>
-              <p className="text-2xl font-bold text-gray-900">{employee.attendance.totalDays}</p>
+              <p className="text-2xl font-bold text-gray-900">{attendance.totalDays}</p>
             </div>
           </div>
         </div>
@@ -320,15 +322,15 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Leave Information</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
-            <p className="text-2xl font-bold text-blue-600">{employee.leave.used}</p>
+            <p className="text-2xl font-bold text-blue-600">{leave.used}</p>
             <p className="text-sm text-gray-600">Days Used</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-green-600">{employee.leave.remaining}</p>
+            <p className="text-2xl font-bold text-green-600">{leave.remaining}</p>
             <p className="text-sm text-gray-600">Days Remaining</p>
           </div>
           <div className="text-center">
-            <p className="text-2xl font-bold text-gray-900">{employee.leave.total}</p>
+            <p className="text-2xl font-bold text-gray-900">{leave.total}</p>
             <p className="text-sm text-gray-600">Total Days</p>
           </div>
         </div>
@@ -428,7 +430,7 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
             Back to Employees
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{employee.name}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{employee.firstName} {employee.lastName}</h1>
             <p className="text-sm text-gray-600">{employee.position} • {employee.department}</p>
           </div>
         </div>
@@ -449,12 +451,12 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
         <div className="flex items-center space-x-6">
           <div className="h-20 w-20 rounded-full bg-blue-500 flex items-center justify-center">
             <span className="text-white text-2xl font-bold">
-              {employee.name.split(' ').map(n => n[0]).join('')}
+              {employee.firstName[0]}{employee.lastName[0]}
             </span>
           </div>
           <div className="flex-1">
             <div className="flex items-center space-x-4 mb-2">
-              <h2 className="text-xl font-bold text-gray-900">{employee.name}</h2>
+              <h2 className="text-xl font-bold text-gray-900">{employee.firstName} {employee.lastName}</h2>
               <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(employee.status)}`}>
                 {employee.status}
               </span>
@@ -463,11 +465,11 @@ export default function EmployeeDetailsPage({ params }: { params: { id: string }
             <div className="flex items-center space-x-6 text-sm text-gray-500">
               <span>Employee ID: {employee.employeeId}</span>
               <span>Hired: {new Date(employee.hireDate).toLocaleDateString()}</span>
-              <span>Manager: {employee.manager}</span>
+              <span>Manager: {employee.manager ? `${employee.manager.firstName} ${employee.manager.lastName}` : 'N/A'}</span>
             </div>
           </div>
           <div className="text-right">
-            <p className="text-2xl font-bold text-gray-900">{employee.salary}</p>
+            <p className="text-2xl font-bold text-gray-900">${employee.salary.toLocaleString()}</p>
             <p className="text-sm text-gray-500">Annual Salary</p>
           </div>
         </div>

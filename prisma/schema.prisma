@@ -108,6 +108,7 @@ model LeaveRequest {
 model Attendance {
   id          String   @id @default(cuid())
   employeeId  String
+  userId      String
   date        DateTime
   checkIn     DateTime?
   checkOut    DateTime?
@@ -118,7 +119,7 @@ model Attendance {
 
   // Relations
   employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  user        User     @relation(fields: [employeeId], references: [id])
+  user        User     @relation(fields: [userId], references: [id])
 }
 
 model PerformanceReview {

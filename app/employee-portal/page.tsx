@@ -1,6 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '../contexts/AuthContext'
+import { useRouter } from 'next/navigation'
+import { Loader2 } from 'lucide-react'
 import { 
   User,
   Calendar,
@@ -25,21 +28,36 @@ import {
 } from 'lucide-react'
 
 export default function EmployeePortalPage() {
-  // Mock employee data
-  const employee = {
-    id: 'EMP001',
-    name: 'John Doe',
-    email: 'john.doe@nkhr.com',
-    phone: '+1 (555) 123-4567',
-    position: 'Senior Software Engineer',
-    department: 'Engineering',
-    manager: 'Sarah Wilson',
-    hireDate: '2022-01-15',
-    salary: '$85,000',
-    avatar: null,
-    role: 'employee',
-    permissions: ['profile', 'attendance', 'leave', 'payroll', 'benefits', 'training', 'documents']
-  }
+  const { user, isLoading: authLoading } = useAuth()
+  const router = useRouter()
+  const [employee, setEmployee] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/auth/login')
+      return
+    }
+
+    if (user?.id) {
+      const fetchEmployeeData = async () => {
+        try {
+          const res = await fetch(`/api/employees?userId=${user.id}`)
+          if (res.ok) {
+            const data = await res.json()
+            if (data.data && data.data.length > 0) {
+              setEmployee(data.data[0])
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch employee", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+      fetchEmployeeData()
+    }
+  }, [user, authLoading, router])
 
   // Mock employee data
   const employeeData = {
@@ -150,19 +168,37 @@ export default function EmployeePortalPage() {
     }
   }
 
+  if (authLoading || loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+      </div>
+    )
+  }
+
+  if (!employee) {
+    return (
+      <div className="bg-white p-6 rounded-lg text-center text-gray-500 shadow-sm">
+        No employee record found for your account. Please contact HR.
+      </div>
+    )
+  }
+
+  const employeeName = `${employee.firstName} ${employee.lastName}`
+
   return (
     <div className="space-y-6">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl p-6 text-white">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold">Welcome back, {employee.name}!</h2>
+            <h2 className="text-2xl font-bold">Welcome back, {employeeName}!</h2>
             <p className="text-blue-100 mt-1">{employee.position} • {employee.department}</p>
-            <p className="text-blue-100 text-sm mt-2">Employee ID: {employee.id}</p>
+            <p className="text-blue-100 text-sm mt-2">Employee ID: {employee.employeeId}</p>
           </div>
           <div className="h-16 w-16 bg-white/20 rounded-full flex items-center justify-center">
             <span className="text-2xl font-bold">
-              {employee.name.split(' ').map(n => n[0]).join('')}
+              {employeeName.split(' ').map((n: string) => n[0]).join('')}
             </span>
           </div>
         </div>

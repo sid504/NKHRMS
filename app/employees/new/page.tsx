@@ -2,6 +2,10 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import * as z from 'zod'
 import { 
   ArrowLeft,
   Save,
@@ -9,21 +13,45 @@ import {
   Mail,
   Phone,
   Calendar,
-  Briefcase
+  Briefcase,
+  Loader2
 } from 'lucide-react'
 
+// Define validation schema
+const employeeSchema = z.object({
+  firstName: z.string().min(2, 'First name is required'),
+  lastName: z.string().min(2, 'Last name is required'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().min(10, 'Phone number must be at least 10 digits'),
+  position: z.string().min(1, 'Position is required'),
+  department: z.string().min(1, 'Department is required'),
+  hireDate: z.string().min(1, 'Hire date is required'),
+  salary: z.string().min(1, 'Salary is required').refine(val => !isNaN(Number(val)) && Number(val) > 0, 'Must be a valid positive number'),
+  employeeId: z.string().min(3, 'Employee ID must be at least 3 characters'),
+  managerId: z.string().optional()
+})
+
+type EmployeeFormData = z.infer<typeof employeeSchema>
+
 export default function AddEmployeePage() {
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    position: '',
-    department: '',
-    hireDate: '',
-    salary: '',
-    manager: '',
-    employeeId: ''
+  const router = useRouter()
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  const { register, handleSubmit, formState: { errors } } = useForm<EmployeeFormData>({
+    resolver: zodResolver(employeeSchema),
+    defaultValues: {
+      firstName: '',
+      lastName: '',
+      email: '',
+      phone: '',
+      position: '',
+      department: '',
+      hireDate: '',
+      salary: '',
+      employeeId: '',
+      managerId: ''
+    }
   })
 
   const departments = ['Engineering', 'Marketing', 'Sales', 'Human Resources', 'Design', 'Finance', 'Operations']
@@ -37,18 +65,29 @@ export default function AddEmployeePage() {
     'Operations Manager', 'Project Manager', 'Business Analyst'
   ]
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }))
-  }
+  const onSubmit = async (data: EmployeeFormData) => {
+    setIsSubmitting(true)
+    setSubmitError(null)
+    
+    try {
+      const res = await fetch('/api/employees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      })
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Handle form submission
-    console.log('Form data:', formData)
-    // Redirect to employees list
+      const responseData = await res.json()
+
+      if (!res.ok) {
+        throw new Error(responseData.error || 'Failed to create employee')
+      }
+
+      router.push('/employees')
+      router.refresh()
+    } catch (error: any) {
+      setSubmitError(error.message)
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -69,15 +108,22 @@ export default function AddEmployeePage() {
           </div>
         </div>
         <button
-          onClick={handleSubmit}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center"
+          onClick={handleSubmit(onSubmit)}
+          disabled={isSubmitting}
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 flex items-center disabled:bg-blue-400"
         >
-          <Save className="h-4 w-4 mr-2" />
-          Save Employee
+          {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+          {isSubmitting ? 'Saving...' : 'Save Employee'}
         </button>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+        {submitError && (
+          <div className="bg-red-50 text-red-600 p-4 rounded-lg border border-red-200">
+            {submitError}
+          </div>
+        )}
+
         {/* Employee Information */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6 flex items-center">
@@ -91,12 +137,11 @@ export default function AddEmployeePage() {
               </label>
               <input
                 type="text"
-                required
-                value={formData.firstName}
-                onChange={(e) => handleInputChange('firstName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                {...register('firstName')}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.firstName ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Enter first name"
               />
+              {errors.firstName && <p className="mt-1 text-sm text-red-500">{errors.firstName.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -104,12 +149,11 @@ export default function AddEmployeePage() {
               </label>
               <input
                 type="text"
-                required
-                value={formData.lastName}
-                onChange={(e) => handleInputChange('lastName', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                {...register('lastName')}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.lastName ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Enter last name"
               />
+              {errors.lastName && <p className="mt-1 text-sm text-red-500">{errors.lastName.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -119,13 +163,12 @@ export default function AddEmployeePage() {
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="email"
-                  required
-                  value={formData.email}
-                  onChange={(e) => handleInputChange('email', e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  {...register('email')}
+                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.email ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="Enter email address"
                 />
               </div>
+              {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -135,45 +178,42 @@ export default function AddEmployeePage() {
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="tel"
-                  required
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  {...register('phone')}
+                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.phone ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="Enter phone number"
                 />
               </div>
+              {errors.phone && <p className="mt-1 text-sm text-red-500">{errors.phone.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Position *
               </label>
               <select
-                required
-                value={formData.position}
-                onChange={(e) => handleInputChange('position', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                {...register('position')}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.position ? 'border-red-500' : 'border-gray-300'}`}
               >
                 <option value="">Select position</option>
                 {positions.map(position => (
                   <option key={position} value={position}>{position}</option>
                 ))}
               </select>
+              {errors.position && <p className="mt-1 text-sm text-red-500">{errors.position.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Department *
               </label>
               <select
-                required
-                value={formData.department}
-                onChange={(e) => handleInputChange('department', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                {...register('department')}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.department ? 'border-red-500' : 'border-gray-300'}`}
               >
                 <option value="">Select department</option>
                 {departments.map(dept => (
                   <option key={dept} value={dept}>{dept}</option>
                 ))}
               </select>
+              {errors.department && <p className="mt-1 text-sm text-red-500">{errors.department.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -183,12 +223,11 @@ export default function AddEmployeePage() {
                 <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="date"
-                  required
-                  value={formData.hireDate}
-                  onChange={(e) => handleInputChange('hireDate', e.target.value)}
-                  className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  {...register('hireDate')}
+                  className={`w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.hireDate ? 'border-red-500' : 'border-gray-300'}`}
                 />
               </div>
+              {errors.hireDate && <p className="mt-1 text-sm text-red-500">{errors.hireDate.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -198,37 +237,36 @@ export default function AddEmployeePage() {
                 <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500">$</span>
                 <input
                   type="number"
-                  required
-                  value={formData.salary}
-                  onChange={(e) => handleInputChange('salary', e.target.value)}
-                  className="w-full pl-8 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  {...register('salary')}
+                  className={`w-full pl-8 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.salary ? 'border-red-500' : 'border-gray-300'}`}
                   placeholder="Enter annual salary"
                 />
               </div>
+              {errors.salary && <p className="mt-1 text-sm text-red-500">{errors.salary.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Manager
+                Manager ID
               </label>
               <input
                 type="text"
-                value={formData.manager}
-                onChange={(e) => handleInputChange('manager', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter manager name"
+                {...register('managerId')}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.managerId ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="Enter manager ID (optional)"
               />
+              {errors.managerId && <p className="mt-1 text-sm text-red-500">{errors.managerId.message}</p>}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Employee ID
+                Employee ID *
               </label>
               <input
                 type="text"
-                value={formData.employeeId}
-                onChange={(e) => handleInputChange('employeeId', e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                {...register('employeeId')}
+                className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${errors.employeeId ? 'border-red-500' : 'border-gray-300'}`}
                 placeholder="Enter employee ID"
               />
+              {errors.employeeId && <p className="mt-1 text-sm text-red-500">{errors.employeeId.message}</p>}
             </div>
           </div>
         </div>

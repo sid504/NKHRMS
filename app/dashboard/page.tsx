@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { 
@@ -85,44 +85,64 @@ export default function DashboardPage() {
     }
   ], [])
 
+  const [dbStats, setDbStats] = useState<any>(null)
+  const [loadingStats, setLoadingStats] = useState(true)
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/dashboard/stats')
+        if (res.ok) {
+          const data = await res.json()
+          setDbStats(data.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error)
+      } finally {
+        setLoadingStats(false)
+      }
+    }
+    fetchStats()
+  }, [])
+
   const stats = useMemo(() => [
     {
       title: 'Total Employees',
-      value: '1,234',
-      change: '+12%',
+      value: loadingStats ? '...' : dbStats?.totalEmployees || 0,
+      change: `+${dbStats?.newEmployeesThisMonth || 0} this month`,
       changeType: 'positive',
       icon: Users,
       color: 'bg-gradient-to-r from-blue-500 to-blue-600',
       trend: 'up'
     },
     {
-      title: 'AI-Powered Insights',
-      value: '47',
-      change: '+23%',
-      changeType: 'positive',
-      icon: Brain,
+      title: 'Pending Leaves',
+      value: loadingStats ? '...' : dbStats?.pendingLeaves || 0,
+      change: 'Requires attention',
+      changeType: dbStats?.pendingLeaves > 0 ? 'negative' : 'positive',
+      icon: Calendar,
       color: 'bg-gradient-to-r from-purple-500 to-purple-600',
-      trend: 'up'
+      trend: dbStats?.pendingLeaves > 0 ? 'down' : 'up'
     },
     {
-      title: 'Active Projects',
-      value: '89',
-      change: '+8%',
+      title: 'Today Attendance',
+      value: loadingStats ? '...' : dbStats?.todayAttendance || 0,
+      change: `${loadingStats ? 0 : Math.round((dbStats?.todayAttendance / dbStats?.activeEmployees) * 100) || 0}% present`,
       changeType: 'positive',
-      icon: Briefcase,
+      icon: Clock,
       color: 'bg-gradient-to-r from-green-500 to-green-600',
       trend: 'up'
     },
     {
-      title: 'Revenue Growth',
-      value: '$2.4M',
-      change: '+18%',
+      title: 'Open Jobs',
+      value: loadingStats ? '...' : dbStats?.openJobs || 0,
+      change: 'Active hiring',
       changeType: 'positive',
-      icon: DollarSign,
+      icon: Briefcase,
       color: 'bg-gradient-to-r from-orange-500 to-orange-600',
       trend: 'up'
     }
-  ], [])
+  ], [dbStats, loadingStats])
 
   const quickActions = useMemo(() => [
     {
@@ -228,10 +248,9 @@ export default function DashboardPage() {
                 <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                 <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
                 <div className="flex items-center mt-2">
-                  <span className={`text-sm font-medium ${stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
+                  <span className={`text-sm font-medium ${stat.changeType === 'positive' ? 'text-green-600' : 'text-yellow-600'}`}>
                     {stat.change}
                   </span>
-                  <span className="text-sm text-gray-500 ml-1">from last month</span>
                 </div>
               </div>
               <div className={`p-3 rounded-lg ${stat.color} text-white`}>

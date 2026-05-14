@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { 
   Users, 
@@ -10,94 +10,47 @@ import {
   MoreVertical,
   Edit,
   Trash2,
-  Eye
+  Eye,
+  Loader2
 } from 'lucide-react'
+import { getStatusColor, formatCurrency } from '@/lib/utils'
 
 export default function EmployeesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDepartment, setSelectedDepartment] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
+  const [employees, setEmployees] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
 
-  // Mock employee data
-  const employees = [
-    {
-      id: 1,
-      name: 'John Doe',
-      email: 'john.doe@company.com',
-      department: 'Engineering',
-      position: 'Senior Developer',
-      status: 'Active',
-      hireDate: '2022-01-15',
-      salary: '$85,000'
-    },
-    {
-      id: 2,
-      name: 'Sarah Wilson',
-      email: 'sarah.wilson@company.com',
-      department: 'Marketing',
-      position: 'Marketing Manager',
-      status: 'Active',
-      hireDate: '2021-08-20',
-      salary: '$75,000'
-    },
-    {
-      id: 3,
-      name: 'Mike Johnson',
-      email: 'mike.johnson@company.com',
-      department: 'Sales',
-      position: 'Sales Representative',
-      status: 'On Leave',
-      hireDate: '2023-03-10',
-      salary: '$65,000'
-    },
-    {
-      id: 4,
-      name: 'Alice Brown',
-      email: 'alice.brown@company.com',
-      department: 'HR',
-      position: 'HR Specialist',
-      status: 'Active',
-      hireDate: '2022-11-05',
-      salary: '$70,000'
-    },
-    {
-      id: 5,
-      name: 'David Lee',
-      email: 'david.lee@company.com',
-      department: 'Engineering',
-      position: 'Frontend Developer',
-      status: 'Active',
-      hireDate: '2023-06-15',
-      salary: '$80,000'
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      setLoading(true)
+      try {
+        const query = new URLSearchParams()
+        if (searchTerm) query.append('search', searchTerm)
+        if (selectedDepartment !== 'all') query.append('department', selectedDepartment)
+        if (selectedStatus !== 'all') query.append('status', selectedStatus.toUpperCase())
+        
+        const res = await fetch(`/api/employees?${query.toString()}`)
+        if (res.ok) {
+          const data = await res.json()
+          setEmployees(data.data)
+        }
+      } catch (error) {
+        console.error('Failed to fetch employees:', error)
+      } finally {
+        setLoading(false)
+      }
     }
-  ]
-
-  const departments = ['Engineering', 'Marketing', 'Sales', 'HR', 'Finance']
-  const statuses = ['Active', 'Inactive', 'On Leave', 'Terminated']
-
-  const filteredEmployees = employees.filter(employee => {
-    const matchesSearch = employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         employee.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesDepartment = selectedDepartment === 'all' || employee.department === selectedDepartment
-    const matchesStatus = selectedStatus === 'all' || employee.status === selectedStatus
     
-    return matchesSearch && matchesDepartment && matchesStatus
-  })
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active':
-        return 'bg-green-100 text-green-800'
-      case 'Inactive':
-        return 'bg-gray-100 text-gray-800'
-      case 'On Leave':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'Terminated':
-        return 'bg-red-100 text-red-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
+    const timer = setTimeout(() => {
+      fetchEmployees()
+    }, 300)
+    
+    return () => clearTimeout(timer)
+  }, [searchTerm, selectedDepartment, selectedStatus])
+  const departments = ['Engineering', 'Marketing', 'Sales', 'Human Resources', 'Finance']
+  const statuses = ['Active', 'Inactive', 'On Leave', 'Terminated']
 
   return (
     <div className="space-y-6">
@@ -182,8 +135,13 @@ export default function EmployeesPage() {
       {/* Employees table */}
       <div className="bg-white shadow-sm border border-gray-200 rounded-xl overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-200">
-          <h3 className="text-lg font-medium text-gray-900">
-            Employee Directory ({filteredEmployees.length} employees)
+          <h3 className="text-lg font-medium text-gray-900 flex items-center">
+            Employee Directory 
+            {loading ? (
+              <Loader2 className="ml-2 h-4 w-4 animate-spin text-gray-500" />
+            ) : (
+              <span className="ml-2 text-sm text-gray-500">({employees.length} employees)</span>
+            )}
           </h3>
         </div>
         
@@ -215,23 +173,23 @@ export default function EmployeesPage() {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredEmployees.map((employee) => (
+              {employees.map((employee) => (
                 <tr key={employee.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <div className="h-10 w-10 flex-shrink-0">
                         <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
                           <span className="text-white font-medium">
-                            {employee.name.split(' ').map(n => n[0]).join('')}
+                            {employee.firstName[0]}{employee.lastName[0]}
                           </span>
                         </div>
                       </div>
                       <div className="ml-4">
                         <div className="text-sm font-medium text-gray-900">
-                          {employee.name}
+                          {employee.firstName} {employee.lastName}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {employee.email}
+                          {employee.user?.email || 'No email'}
                         </div>
                       </div>
                     </div>
@@ -251,13 +209,13 @@ export default function EmployeesPage() {
                     {new Date(employee.hireDate).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {employee.salary}
+                    {formatCurrency(employee.salary)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end space-x-2">
-                      <button className="text-blue-600 hover:text-blue-900">
+                      <Link href={`/employees/${employee.id}`} className="text-blue-600 hover:text-blue-900">
                         <Eye className="h-4 w-4" />
-                      </button>
+                      </Link>
                       <button className="text-gray-600 hover:text-gray-900">
                         <Edit className="h-4 w-4" />
                       </button>
@@ -272,7 +230,7 @@ export default function EmployeesPage() {
           </table>
         </div>
 
-        {filteredEmployees.length === 0 && (
+        {!loading && employees.length === 0 && (
           <div className="text-center py-12">
             <Users className="mx-auto h-12 w-12 text-gray-400" />
             <h3 className="mt-2 text-sm font-medium text-gray-900">No employees found</h3>

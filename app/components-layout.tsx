@@ -206,6 +206,64 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 <X className="h-6 w-6 text-white" />
               </button>
             </div>
+            <div className="flex-1 h-0 overflow-y-auto">
+              {/* Logo */}
+              <div className="flex items-center h-16 flex-shrink-0 px-4 bg-gradient-to-r from-blue-600 to-indigo-600">
+                <div className="flex items-center">
+                  <div className="flex-shrink-0">
+                    <Brain className="h-8 w-8 text-white" />
+                  </div>
+                  <div className="ml-3">
+                    <h1 className="text-xl font-bold text-white">NKHR</h1>
+                    <p className="text-xs text-blue-100">AI-Powered HR Platform</p>
+                  </div>
+                </div>
+              </div>
+              <nav className="px-2 py-4 space-y-1">
+                {navigation.map((item) => {
+                  const isActive = pathname === item.href
+                  return (
+                    <Link prefetch={false}
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`group flex items-center px-2 py-2 text-base font-medium rounded-md transition-colors ${
+                        isActive
+                          ? 'bg-blue-100 text-blue-700 border border-blue-200'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <item.icon
+                        className={`mr-4 h-6 w-6 ${
+                          isActive ? 'text-blue-500' : 'text-gray-400 group-hover:text-gray-500'
+                        }`}
+                      />
+                      {item.name}
+                    </Link>
+                  )
+                })}
+              </nav>
+            </div>
+            {/* User Profile */}
+            <div className="flex-shrink-0 flex border-t border-gray-200 p-4">
+              <div className="flex items-center w-full">
+                <div className="flex-shrink-0">
+                  <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                    <User className="h-6 w-6 text-white" />
+                  </div>
+                </div>
+                <div className="ml-3 flex-1">
+                  <p className="text-base font-medium text-gray-700">{user.name}</p>
+                  <p className="text-sm text-gray-500">{user.position}</p>
+                </div>
+                <button 
+                  onClick={() => setShowLogoutConfirm(true)}
+                  className="flex-shrink-0 p-2 rounded-md text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -296,8 +354,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
                 <input
                   type="text"
-                  placeholder="Search anything..."
+                  placeholder="Search employees..."
                   ref={searchInputRef}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && searchInputRef.current?.value) {
+                      router.push(`/employees?search=${encodeURIComponent(searchInputRef.current.value)}`)
+                    }
+                  }}
                   className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                 />
               </div>

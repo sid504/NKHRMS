@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Link from 'next/link'
 import {
@@ -66,15 +66,52 @@ export default function PayrollPage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('overview')
 
-  // Mock data for payroll analytics
-  const payrollData = {
-    totalEmployees: 200,
-    totalPayroll: 1250000,
-    averageSalary: 6250,
-    totalBenefits: 187500,
-    totalTaxes: 312500,
-    totalDeductions: 75000
-  }
+  // Dynamic data for payroll analytics
+  const [payrollData, setPayrollData] = useState({
+    totalEmployees: 0,
+    totalPayroll: 0,
+    averageSalary: 0,
+    totalBenefits: 0,
+    totalTaxes: 0,
+    totalDeductions: 0
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchPayroll = async () => {
+      try {
+        const res = await fetch('/api/payroll?limit=100')
+        if (res.ok) {
+          const data = await res.json()
+          const records = data.data || []
+          
+          let totalPay = 0
+          let totalDeduct = 0
+          let totalBene = 0 // Using bonuses as benefits for now
+          
+          records.forEach((record: any) => {
+            totalPay += record.baseSalary + record.overtime + record.bonuses
+            totalDeduct += record.deductions
+            totalBene += record.bonuses
+          })
+          
+          setPayrollData({
+            totalEmployees: records.length,
+            totalPayroll: totalPay,
+            averageSalary: records.length ? totalPay / records.length : 0,
+            totalBenefits: totalBene,
+            totalTaxes: totalDeduct * 0.7, // Mock split for tax/deductions
+            totalDeductions: totalDeduct * 0.3
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch payroll data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchPayroll()
+  }, [])
 
   const monthlyTrendData = [
     { month: 'Jan', payroll: 1200000, benefits: 180000, taxes: 300000 },
@@ -124,7 +161,9 @@ export default function PayrollPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Total Payroll</p>
-                    <p className="text-2xl font-bold text-gray-900">{formatCurrency(payrollData.totalPayroll)}</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {loading ? '...' : formatCurrency(payrollData.totalPayroll)}
+                    </p>
                   </div>
                   <DollarSign className="h-8 w-8 text-green-600" />
                 </div>
@@ -138,7 +177,9 @@ export default function PayrollPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Average Salary</p>
-                    <p className="text-2xl font-bold text-blue-600">{formatCurrency(payrollData.averageSalary)}</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                      {loading ? '...' : formatCurrency(payrollData.averageSalary)}
+                    </p>
                   </div>
                   <Calculator className="h-8 w-8 text-blue-600" />
                 </div>
@@ -151,7 +192,9 @@ export default function PayrollPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Total Benefits</p>
-                    <p className="text-2xl font-bold text-purple-600">{formatCurrency(payrollData.totalBenefits)}</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {loading ? '...' : formatCurrency(payrollData.totalBenefits)}
+                    </p>
                   </div>
                   <Award className="h-8 w-8 text-purple-600" />
                 </div>
@@ -164,7 +207,9 @@ export default function PayrollPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Total Taxes</p>
-                    <p className="text-2xl font-bold text-red-600">{formatCurrency(payrollData.totalTaxes)}</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      {loading ? '...' : formatCurrency(payrollData.totalTaxes)}
+                    </p>
                   </div>
                   <Shield className="h-8 w-8 text-red-600" />
                 </div>
@@ -177,7 +222,9 @@ export default function PayrollPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Total Deductions</p>
-                    <p className="text-2xl font-bold text-yellow-600">{formatCurrency(payrollData.totalDeductions)}</p>
+                    <p className="text-2xl font-bold text-yellow-600">
+                      {loading ? '...' : formatCurrency(payrollData.totalDeductions)}
+                    </p>
                   </div>
                   <Receipt className="h-8 w-8 text-yellow-600" />
                 </div>
@@ -190,7 +237,9 @@ export default function PayrollPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Net Pay</p>
-                    <p className="text-2xl font-bold text-green-600">{formatCurrency(payrollData.totalPayroll - payrollData.totalTaxes - payrollData.totalDeductions)}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {loading ? '...' : formatCurrency(payrollData.totalPayroll - payrollData.totalTaxes - payrollData.totalDeductions)}
+                    </p>
                   </div>
                   <Banknote className="h-8 w-8 text-green-600" />
                 </div>
@@ -270,9 +319,9 @@ export default function PayrollPage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Payroll Processing</h3>
               <p className="text-gray-600">Process payroll for current month, calculate salaries, taxes, and generate payslips.</p>
               <div className="mt-4">
-                <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700">
+                <Link href="/payroll/process" className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 inline-block">
                   Process Payroll
-                </button>
+                </Link>
               </div>
             </div>
           </div>

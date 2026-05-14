@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import Link from 'next/link'
 import {
@@ -60,15 +60,40 @@ export default function AttendancePage() {
   const { user } = useAuth()
   const [activeTab, setActiveTab] = useState('overview')
 
-  // Mock data for attendance analytics
-  const attendanceData = {
-    totalEmployees: 200,
-    presentToday: 142,
-    absentToday: 15,
-    lateToday: 12,
-    wfhToday: 23,
-    onLeaveToday: 8
-  }
+  // Dynamic data for attendance analytics
+  const [attendanceData, setAttendanceData] = useState({
+    totalEmployees: 0,
+    presentToday: 0,
+    absentToday: 0,
+    lateToday: 0,
+    wfhToday: 0,
+    onLeaveToday: 0
+  })
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      try {
+        const res = await fetch('/api/dashboard/stats')
+        if (res.ok) {
+          const data = await res.json()
+          setAttendanceData({
+            totalEmployees: data.data.totalEmployees || 0,
+            presentToday: data.data.todayAttendance || 0,
+            absentToday: (data.data.totalEmployees || 0) - (data.data.todayAttendance || 0) - (data.data.pendingLeaves || 0),
+            lateToday: 0, // Currently no field for this
+            wfhToday: 0, // Currently no field for this
+            onLeaveToday: data.data.pendingLeaves || 0
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch attendance data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchAttendance()
+  }, [])
 
   const weeklyTrendData = [
     { day: 'Mon', present: 185, absent: 15, late: 8 },
@@ -110,7 +135,9 @@ export default function AttendancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Total Employees</p>
-                    <p className="text-2xl font-bold text-gray-900">{attendanceData.totalEmployees}</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {loading ? '...' : attendanceData.totalEmployees}
+                    </p>
                   </div>
                   <Users className="h-8 w-8 text-blue-600" />
                 </div>
@@ -123,7 +150,9 @@ export default function AttendancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Present Today</p>
-                    <p className="text-2xl font-bold text-green-600">{attendanceData.presentToday}</p>
+                    <p className="text-2xl font-bold text-green-600">
+                      {loading ? '...' : attendanceData.presentToday}
+                    </p>
                   </div>
                   <UserCheck className="h-8 w-8 text-green-600" />
                 </div>
@@ -136,7 +165,9 @@ export default function AttendancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Working Remotely</p>
-                    <p className="text-2xl font-bold text-purple-600">{attendanceData.wfhToday}</p>
+                    <p className="text-2xl font-bold text-purple-600">
+                      {loading ? '...' : attendanceData.wfhToday}
+                    </p>
                   </div>
                   <Monitor className="h-8 w-8 text-purple-600" />
                 </div>
@@ -149,7 +180,9 @@ export default function AttendancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Late Arrivals</p>
-                    <p className="text-2xl font-bold text-yellow-600">{attendanceData.lateToday}</p>
+                    <p className="text-2xl font-bold text-yellow-600">
+                      {loading ? '...' : attendanceData.lateToday}
+                    </p>
                   </div>
                   <Clock className="h-8 w-8 text-yellow-600" />
                 </div>
@@ -162,7 +195,9 @@ export default function AttendancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">Absent</p>
-                    <p className="text-2xl font-bold text-red-600">{attendanceData.absentToday}</p>
+                    <p className="text-2xl font-bold text-red-600">
+                      {loading ? '...' : attendanceData.absentToday}
+                    </p>
                   </div>
                   <UserX className="h-8 w-8 text-red-600" />
                 </div>
@@ -175,7 +210,9 @@ export default function AttendancePage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-gray-600">On Leave</p>
-                    <p className="text-2xl font-bold text-gray-600">{attendanceData.onLeaveToday}</p>
+                    <p className="text-2xl font-bold text-gray-600">
+                      {loading ? '...' : attendanceData.onLeaveToday}
+                    </p>
                   </div>
                   <Calendar className="h-8 w-8 text-gray-600" />
                 </div>
