@@ -12,6 +12,7 @@ import {
   CheckCircle, 
   AlertCircle,
   AlertTriangle,
+  Shield,
   Save,
   Loader2,
   Filter,
