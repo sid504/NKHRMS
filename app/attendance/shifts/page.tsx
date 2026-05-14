@@ -12,11 +12,32 @@ import {
   Settings,
   Shield,
   Zap,
-  BarChart3
+  CheckCircle,
+  X,
+  Edit,
+  Trash2,
+  Moon,
+  Sun,
+  Coffee
 } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 
 export default function ShiftManagementPage() {
+  const [shifts, setShifts] = useState([
+    { id: '1', name: 'General Shift', start: '09:00', end: '18:00', grace: '15', type: 'Day', color: 'bg-blue-50 text-blue-600' },
+    { id: '2', name: 'Morning Shift', start: '06:00', end: '14:00', grace: '10', type: 'Day', color: 'bg-orange-50 text-orange-600' },
+    { id: '3', name: 'Night Shift', start: '22:00', end: '06:00', grace: '30', type: 'Night', color: 'bg-indigo-50 text-indigo-600' }
+  ])
+  
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [newShift, setNewShift] = useState({ name: '', start: '09:00', end: '18:00', grace: '15', type: 'Day' })
+
+  const handleAdd = (e: React.FormEvent) => {
+    e.preventDefault()
+    setShifts([...shifts, { ...newShift, id: Date.now().toString(), color: 'bg-purple-50 text-purple-600' }])
+    setShowAddModal(false)
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -27,83 +48,132 @@ export default function ShiftManagementPage() {
           </Link>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Shift Management</h1>
-            <p className="text-gray-600">Configure and manage employee work shifts</p>
+            <p className="text-gray-600">Define work timings, grace periods, and shift types</p>
           </div>
         </div>
-        <button className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center shadow-lg shadow-blue-200 transition-all">
+        <button 
+          onClick={() => setShowAddModal(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center shadow-lg shadow-blue-100 transition-all"
+        >
           <Plus className="h-4 w-4 mr-2" />
-          Create New Shift
+          Define New Shift
         </button>
       </div>
 
-      {/* Feature Under Development / Placeholder UI */}
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden"
-      >
-        <div className="p-12 text-center max-w-2xl mx-auto">
-          <div className="inline-flex items-center justify-center p-6 bg-blue-50 rounded-3xl text-blue-600 mb-6">
-            <Clock className="h-16 w-16 animate-pulse" />
-          </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-4">Advanced Roster Management</h2>
-          <p className="text-lg text-gray-600 mb-8">
-            We're building a sophisticated shift scheduling engine with AI-powered optimization. 
-            This module will allow you to create recurring rotations, manage night shifts, and handle automatic overtime calculations.
-          </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
-            {[
-              { icon: Calendar, title: "Dynamic Rotations", desc: "Set up complex 4-on-4-off or custom weekly cycles." },
-              { icon: Shield, title: "Compliance Guard", desc: "Automatically detect break violations and labor law risks." },
-              { icon: Zap, title: "Auto-Assignment", desc: "AI identifies the best employees based on availability and skills." },
-              { icon: BarChart3, title: "Shift Analytics", desc: "Track coverage levels and peak-hour staffing needs." }
-            ].map((feature, i) => (
-              <div key={i} className="p-4 bg-gray-50 rounded-xl border border-gray-100 flex items-start space-x-4">
-                <div className="p-2 bg-white rounded-lg text-blue-600 shadow-sm">
-                  <feature.icon className="h-5 w-5" />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {shifts.map((shift) => (
+          <motion.div 
+            key={shift.id}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 relative group"
+          >
+             <div className="flex justify-between items-start mb-6">
+                <div className={`p-4 rounded-2xl ${shift.color}`}>
+                   {shift.type === 'Day' ? <Sun className="h-6 w-6" /> : <Moon className="h-6 w-6" />}
+                </div>
+                <div className="flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg">
+                      <Edit className="h-4 w-4" />
+                   </button>
+                   <button 
+                    onClick={() => setShifts(shifts.filter(s => s.id !== shift.id))}
+                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"
+                   >
+                      <Trash2 className="h-4 w-4" />
+                   </button>
+                </div>
+             </div>
+
+             <h3 className="text-xl font-bold text-gray-900 mb-2">{shift.name}</h3>
+             <div className="flex items-center text-2xl font-black text-gray-900 mb-6">
+                <Clock className="h-5 w-5 mr-2 text-gray-400" />
+                {shift.start} — {shift.end}
+             </div>
+
+             <div className="grid grid-cols-2 gap-4">
+                <div className="p-3 bg-gray-50 rounded-xl">
+                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Grace Period</p>
+                   <p className="text-sm font-bold text-gray-700">{shift.grace} Mins</p>
+                </div>
+                <div className="p-3 bg-gray-50 rounded-xl">
+                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Break Time</p>
+                   <p className="text-sm font-bold text-gray-700">60 Mins</p>
+                </div>
+             </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Add Shift Modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden"
+            >
+              <div className="p-6 bg-blue-600 text-white flex justify-between items-center">
+                <h2 className="text-xl font-bold">Configure Shift</h2>
+                <button onClick={() => setShowAddModal(false)} className="p-1 hover:bg-white/20 rounded-full transition-colors">
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAdd} className="p-8 space-y-6">
+                <div>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Shift Name</label>
+                  <input 
+                    required
+                    type="text" 
+                    value={newShift.name}
+                    onChange={e => setNewShift({...newShift, name: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    placeholder="e.g. Evening Roster"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">Start Time</label>
+                    <input 
+                      type="time" 
+                      value={newShift.start}
+                      onChange={e => setNewShift({...newShift, start: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-bold text-gray-700 mb-2">End Time</label>
+                    <input 
+                      type="time" 
+                      value={newShift.end}
+                      onChange={e => setNewShift({...newShift, end: e.target.value})}
+                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                    />
+                  </div>
                 </div>
                 <div>
-                  <h4 className="font-semibold text-gray-900">{feature.title}</h4>
-                  <p className="text-sm text-gray-500">{feature.desc}</p>
+                  <label className="block text-sm font-bold text-gray-700 mb-2">Grace Period (Minutes)</label>
+                  <input 
+                    type="number" 
+                    value={newShift.grace}
+                    onChange={e => setNewShift({...newShift, grace: e.target.value})}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  />
                 </div>
-              </div>
-            ))}
+                <button 
+                  type="submit"
+                  className="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl shadow-lg hover:bg-blue-700 transition-all"
+                >
+                  Create Shift
+                </button>
+              </form>
+            </motion.div>
           </div>
-
-          <div className="mt-12 flex items-center justify-center space-x-4">
-            <div className="h-2 w-24 bg-blue-100 rounded-full overflow-hidden">
-              <motion.div 
-                animate={{ x: [-100, 100] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="h-full w-12 bg-blue-600 rounded-full"
-              />
-            </div>
-            <span className="text-sm font-medium text-gray-500 italic">Coming in Version 2.0</span>
-            <div className="h-2 w-24 bg-blue-100 rounded-full overflow-hidden">
-              <motion.div 
-                animate={{ x: [-100, 100] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="h-full w-12 bg-blue-600 rounded-full"
-              />
-            </div>
-          </div>
-        </div>
-
-        {/* Mock background of what the UI will look like (blurry/faded) */}
-        <div className="h-64 bg-gray-50 border-t border-gray-100 relative opacity-40 grayscale blur-[2px] pointer-events-none">
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-full max-w-4xl px-8">
-               <div className="grid grid-cols-7 gap-2">
-                 {[...Array(21)].map((_, i) => (
-                   <div key={i} className="h-12 bg-white rounded-lg shadow-sm border border-gray-200" />
-                 ))}
-               </div>
-            </div>
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-white to-transparent" />
-        </div>
-      </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
