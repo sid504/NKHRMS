@@ -1,15 +1,14 @@
 'use client'
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { createContext, useContext, ReactNode } from 'react'
+import { useSession, signIn, signOut, SessionProvider } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 
 interface User {
   id: string
   name: string
   email: string
-  role: 'admin' | 'employee' | 'manager'
-  department?: string
-  position?: string
+  role: string
 }
 
 interface AuthContextType {
@@ -22,117 +21,45 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+  return (
+    <SessionProvider>
+      <AuthContextInner>{children}</AuthContextInner>
+    </SessionProvider>
+  )
+}
+
+function AuthContextInner({ children }: { children: ReactNode }) {
+  const { data: session, status } = useSession()
   const router = useRouter()
 
-  useEffect(() => {
-    // Check for existing session on app load - optimized for speed
-    if (typeof window !== 'undefined') {
-      const storedUser = localStorage.getItem('user')
-      if (storedUser) {
-        try {
-          const parsedUser = JSON.parse(storedUser)
-          setUser(parsedUser)
-        } catch (error) {
-          localStorage.removeItem('user')
-        }
-      }
-    }
-    // Set loading to false immediately after checking
-    setIsLoading(false)
-  }, [])
-
   const login = async (email: string, password: string, role: string): Promise<boolean> => {
-    setIsLoading(true)
+    const res = await signIn('credentials', {
+      email,
+      password,
+      redirect: false,
+    })
     
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      })
-
-      if (!res.ok) {
-        // ULTIMATE DEMO BYPASS: If API fails (likely due to DB path issues on Netlify), 
-        // allow the primary admin demo account to enter the dashboard anyway.
-        if (email === 'admin@nkhr.com' && password === 'admin123' && role === 'admin') {
-          const demoUser: User = {
-            id: 'demo-admin-id',
-            email: 'admin@nkhr.com',
-            name: 'Demo Admin',
-            role: 'admin',
-            position: 'System Administrator',
-            department: 'Administration'
-          }
-          setUser(demoUser)
-          localStorage.setItem('user', JSON.stringify(demoUser))
-          localStorage.setItem('token', 'demo-token')
-          setIsLoading(false)
-          router.push('/dashboard')
-          return true
-        }
-
-        setIsLoading(false)
-        return false
-      }
-
-      const data = await res.json()
-      const authUser = data.data
-
-      // Role check
-      if (role === 'admin' && authUser.role === 'admin') {
-        setUser(authUser)
-        localStorage.setItem('user', JSON.stringify(authUser))
-        localStorage.setItem('token', 'real-jwt-token') // Future: actual JWT
-        setIsLoading(false)
-        router.push('/dashboard')
-        return true
-      } else if (role === 'employee' && (authUser.role === 'employee' || authUser.role === 'manager' || authUser.role === 'hr_manager')) {
-        setUser(authUser)
-        localStorage.setItem('user', JSON.stringify(authUser))
-        localStorage.setItem('token', 'real-jwt-token')
-        setIsLoading(false)
-        router.push('/employee-portal')
-        return true
-      }
-      
-      setIsLoading(false)
-      return false
-    } catch (error) {
-      console.error('Login error:', error)
-      setIsLoading(false)
+    if (res?.error) {
+      console.error(res.error)
       return false
     }
+    return true
   }
 
-  const logout = () => {
-    // Guard for client side APIs
-    try {
-      setUser(null)
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('user')
-        localStorage.removeItem('token')
-        sessionStorage.clear()
-      }
-    } catch (_) {
-      // no-op
-    }
-    // Use replace to avoid user returning to protected page via back button
-    router.replace('/auth/login')
+  const logout = async () => {
+    await signOut({ redirect: false })
+    router.push('/login')
   }
 
-  const value = {
-    user,
-    login,
-    logout,
-    isLoading
-  }
+  const user = session?.user ? {
+    id: (session.user as any).id || '',
+    name: session.user.name || '',
+    email: session.user.email || '',
+    role: (session.user as any).role || 'EMPLOYEE'
+  } : null
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, login, logout, isLoading: status === 'loading' }}>
       {children}
     </AuthContext.Provider>
   )
@@ -144,4 +71,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
-} 
+}

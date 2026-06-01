@@ -27,16 +27,26 @@ export default function ApplicationsPage() {
 
   useEffect(() => {
     const fetchApplications = async () => {
-      // For now, using high-fidelity mock data until we build the Application API
-      // In a real scenario, this would fetch from /api/recruitment/applications
-      setTimeout(() => {
-        setApplications([
-          { id: '1', name: 'Alex Rivera', role: 'Senior Frontend Dev', email: 'alex@example.com', status: 'Hired', date: '2024-05-10', match: '98%' },
-          { id: '2', name: 'Samantha Chen', role: 'Product Designer', email: 'sam@example.com', status: 'In Review', date: '2024-05-12', match: '85%' },
-          { id: '3', name: 'Jordan Smyth', role: 'Fullstack Engineer', email: 'jordan@example.com', status: 'Interviewing', date: '2024-05-14', match: '92%' }
-        ])
+      try {
+        const res = await fetch('/api/recruitment/applications')
+        if (res.ok) {
+          const data = await res.json()
+          const formatted = data.data.map((app: any) => ({
+            id: app.id,
+            name: `${app.firstName} ${app.lastName}`,
+            role: app.job?.title || 'Unknown Role',
+            email: app.email,
+            status: app.status,
+            date: new Date(app.createdAt).toISOString().split('T')[0],
+            match: '85%' // TODO: Calculate dynamically based on requirements
+          }))
+          setApplications(formatted)
+        }
+      } catch (error) {
+        console.error('Failed to fetch applications', error)
+      } finally {
         setLoading(false)
-      }, 800)
+      }
     }
     fetchApplications()
   }, [])

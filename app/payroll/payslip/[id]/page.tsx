@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { 
@@ -16,7 +17,8 @@ import {
   Shield,
   CheckCircle,
   TrendingUp,
-  TrendingDown
+  TrendingDown,
+  Loader2
 } from 'lucide-react'
 import { motion } from 'framer-motion'
 
@@ -24,23 +26,53 @@ export default function PayslipDetailPage() {
   const params = useParams()
   const id = params.id as string
 
-  // Mock payroll record for the payslip
-  const payslip = {
-    employeeName: 'John Smith',
-    employeeId: 'EMP-2024-001',
-    department: 'Engineering',
-    position: 'Senior Developer',
-    period: 'May 2024',
-    payDate: 'May 31, 2024',
-    basicSalary: 5000.00,
-    overtime: 240.00,
-    bonus: 500.00,
-    tax: 850.00,
-    healthInsurance: 150.00,
-    retirement: 250.00,
-    netSalary: 4490.00,
-    bankName: 'Global Trust Bank',
-    accountNumber: '**** 5678'
+  const [payslip, setPayslip] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    const fetchPayslip = async () => {
+      try {
+        const res = await fetch(`/api/payroll/${id}`)
+        if (res.ok) {
+          const data = await res.json()
+          const p = data.data
+          setPayslip({
+            employeeName: p.employee ? `${p.employee.firstName} ${p.employee.lastName}` : 'Unknown',
+            employeeId: p.employee?.employeeId || 'N/A',
+            department: p.employee?.department || 'N/A',
+            position: p.employee?.position || 'N/A',
+            period: `${new Date(p.year, p.month - 1).toLocaleString('default', { month: 'long' })} ${p.year}`,
+            payDate: new Date(p.createdAt).toLocaleDateString(),
+            basicSalary: p.baseSalary || 0,
+            overtime: p.overtime || 0,
+            bonus: p.bonuses || 0,
+            tax: (p.deductions || 0) * 0.7, // Simulated tax split
+            healthInsurance: (p.deductions || 0) * 0.2,
+            retirement: (p.deductions || 0) * 0.1,
+            netSalary: p.netSalary || 0,
+            bankName: 'Global Trust Bank', // Simulated bank details
+            accountNumber: '**** 5678'
+          })
+        }
+      } catch (error) {
+        console.error('Failed to fetch payslip', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (id) fetchPayslip()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+      </div>
+    )
+  }
+
+  if (!payslip) {
+    return <div className="p-8 text-center text-gray-500">Payslip not found</div>
   }
 
   return (

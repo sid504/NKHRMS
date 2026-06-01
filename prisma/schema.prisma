@@ -54,6 +54,9 @@ model Employee {
   attendance   Attendance[]
   performanceReviews PerformanceReview[]
   payroll      Payroll[]
+  courseEnrollments CourseEnrollment[]
+  benefits     EmployeeBenefit[]
+  supportTickets SupportTicket[]
 }
 
 model Manager {
@@ -204,5 +207,74 @@ model Holiday {
   region      String   @default("Global")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model TrainingCourse {
+  id          String   @id @default(cuid())
+  title       String
+  category    String
+  provider    String
+  duration    String
+  rating      Float
+  description String
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  enrollments CourseEnrollment[]
+}
+
+model CourseEnrollment {
+  id          String   @id @default(cuid())
+  courseId    String
+  employeeId  String
+  status      String   @default("ENROLLED") // ENROLLED, COMPLETED, DROPPED
+  progress    Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course      TrainingCourse @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  employee    Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model BenefitPlan {
+  id          String   @id @default(cuid())
+  name        String
+  type        String   // Health, Retirement, Life
+  provider    String
+  coverage    String
+  premium     Float
+  description String
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  enrollments EmployeeBenefit[]
+}
+
+model EmployeeBenefit {
+  id          String   @id @default(cuid())
+  planId      String
+  employeeId  String
+  status      String   @default("ACTIVE")
+  enrolledAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  plan        BenefitPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  employee    Employee    @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+}
+
+model SupportTicket {
+  id          String   @id @default(cuid())
+  employeeId  String
+  subject     String
+  description String
+  category    String   // IT, HR, Payroll, Other
+  priority    String   @default("MEDIUM")
+  status      String   @default("OPEN")
+  resolvedAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employee    Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
 }
  
